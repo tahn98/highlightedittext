@@ -3,23 +3,16 @@ package com.example.myapplication
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
-import android.text.style.LineHeightSpan
+
 import android.text.style.ReplacementSpan
+import kotlin.math.roundToInt
 
-class RoundedBackgroundSpan (
-    private val backgroundColor: Int,
-    private val textColor: Int,
-    private val padding: Int = 16,
-    private val radius: Float? = null) : ReplacementSpan(),
 
-    LineHeightSpan {
-    override fun getSize(paint: Paint, text: CharSequence?, start: Int, end: Int, fm: Paint.FontMetricsInt?): Int {
-        return (padding + paint.measureText(text, start, end) + padding).toInt()
-    }
-
+class RoundedBackgroundSpan(private val mBackgroundColor: Int, private val mTextColor: Int, private val mTextSize: Float, private val mPaddingVertical: Float = PADDING_X, private val mPaddingHorizontal: Float = PADDING_Y) :
+    ReplacementSpan() {
     override fun draw(
         canvas: Canvas,
-        text: CharSequence?,
+        text: CharSequence,
         start: Int,
         end: Int,
         x: Float,
@@ -28,28 +21,52 @@ class RoundedBackgroundSpan (
         bottom: Int,
         paint: Paint
     ) {
-        paint.color = backgroundColor
+        var newPaint: Paint = paint
+        // make a copy for not editing the referenced paint
+        newPaint = Paint(newPaint)
+        newPaint.textSize = mTextSize
 
-        val width = paint.measureText(text, start, end)
-        val height = paint.fontMetrics.descent - paint.fontMetrics.ascent + 2 * padding
+        // draw the rounded background
+        newPaint.color = mBackgroundColor
+        val textHeightWrapping: Float = DimenUtils.convertDpToPx(4f)
+        val tagBottom = top + textHeightWrapping + 2*PADDING_Y + mTextSize + textHeightWrapping
+        val tagRight = x + getTagWidth(text, start, end, newPaint)
+        val rect = RectF(x, top.toFloat(), tagRight, tagBottom)
+        canvas.drawRoundRect(rect, CORNER_RADIUS, CORNER_RADIUS, newPaint)
 
-        if(radius != null) {
-            val rect = RectF(x, top.toFloat(), x + width + 2 * padding, bottom.toFloat())
-            canvas.drawRoundRect(rect, radius, radius, paint)
-        } else {
-            canvas.drawCircle(x + ((width + 2 * padding) / 2), ((bottom - top) / 2).toFloat(), height / 2, paint)
-        }
-
-        paint.color = textColor
-        canvas.drawText(text ?: "", start, end, x + padding, y.toFloat(), paint)
+        // draw the text
+        newPaint.color = mTextColor
+        canvas.drawText(
+            text,
+            start,
+            end,
+            x + PADDING_X,
+            tagBottom - PADDING_Y - textHeightWrapping - OFFSET_VERTICAL_NUMBER,
+            newPaint
+        )
     }
 
-    override fun chooseHeight(
-        text: CharSequence?,
+    private fun getTagWidth(text: CharSequence, start: Int, end: Int, paint: Paint): Int {
+        return (2*PADDING_X + paint.measureText(text.subSequence(start, end).toString())).roundToInt()
+    }
+
+    override fun getSize(
+        paint: Paint,
+        text: CharSequence,
         start: Int,
         end: Int,
-        spanstartv: Int,
-        lineHeight: Int,
         fm: Paint.FontMetricsInt?
-    ) {}
+    ): Int {
+        var newPaint: Paint = paint
+        newPaint = Paint(newPaint) // make a copy for not editing the referenced paint
+        newPaint.textSize = mTextSize
+        return getTagWidth(text, start, end, newPaint)
+    }
+
+    companion object {
+        private const val CORNER_RADIUS = 12f
+        private val PADDING_X: Float = DimenUtils.convertDpToPx(12f)
+        private val PADDING_Y: Float = DimenUtils.convertDpToPx(2f)
+        private val OFFSET_VERTICAL_NUMBER: Float = DimenUtils.convertDpToPx(2f)
+    }
 }
