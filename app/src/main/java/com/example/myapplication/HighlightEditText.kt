@@ -41,7 +41,11 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
         val end: Int = 4
         val flag = Spannable.SPAN_INCLUSIVE_INCLUSIVE
         editText.text?.setSpan(boldSpan, start, end, flag)
-        editText.text?.setSpan(BackgroundColorSpan(Color.BLUE),2, 4, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+        val bg = RoundedBackgroundSpan(Color.BLUE, Color.BLACK, 24, 23f)
+
+        editText.text?.setSpan(bg,2, 4, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
 
     }
 
