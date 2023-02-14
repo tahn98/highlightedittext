@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.TextWatcher
 import android.util.AttributeSet
 import android.util.Log
@@ -81,6 +82,15 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
         isHighlightFirstTime = true
     }
 
+    fun updateSpannableMargin(){
+        val keys = mKeywordMap.keys.toList()
+        val spannableStringBuilder = SpannableString(mEditText.text)
+        keys.forEach {
+            val spannableKeyWordPosition = mKeywordMap[it] ?: return@forEach
+//            spannableStringBuilder[spannableKeyWordPosition.first - 1].
+        }
+    }
+
     fun unHighlightKeywords(){
 
     }
@@ -103,16 +113,18 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
         val content = mEditText.text.toString()
         val spannableString = SpannableString(content)
 
-        this.mKeywordMap.clear()
-        this.mKeywords.forEach { keyword ->
-            val indexOfKeyword = content.indexOf(keyword, ignoreCase = true)
+        mKeywordMap.clear()
+        mKeywords.forEach { keyword ->
+            val indexOfKeyword = content.indexOf(keyword, ignoreCase = false)
             if(indexOfKeyword >= 0){
                 mKeywordMap[keyword] = Pair(indexOfKeyword, indexOfKeyword + keyword.length)
             }
         }
 
+        mKeywords.clear()
         mKeywordMap.forEach {
             spannableString.setSpan(android.text.Annotation("", "rounded"), it.value.first, it.value.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            mKeywords.add(it.key)
         }
 
         prevSelection = mEditText.selectionStart
