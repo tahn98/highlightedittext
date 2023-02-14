@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string name="ltr">"this is <annotation key="rounded">a regular</annotation> paragraph."</string>
 </resources>

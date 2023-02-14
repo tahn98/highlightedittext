@@ -1,15 +1,16 @@
 package com.example.myapplication
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.Typeface
+import android.text.Editable
 import android.text.Spannable
-import android.text.style.StyleSpan
+import android.text.SpannableString
+import android.text.TextWatcher
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.widget.FrameLayout
-import androidx.appcompat.widget.AppCompatEditText
 import com.example.myapplication.databinding.LayoutHighlightEdtBinding
+import com.example.myapplication.span.RoundedBgEditText
 
 /**
  * EditText to support highlight key
@@ -17,45 +18,105 @@ import com.example.myapplication.databinding.LayoutHighlightEdtBinding
 class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
     FrameLayout(context, attrs, defStyle) {
 
-    private var keywords: MutableSet<String> = mutableSetOf()
-    private var mKeywordMap = mutableMapOf<String, Pair<Int, Int>>()
-
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0)
     constructor(context: Context) : this(context, null, 0)
 
-    private var binding: LayoutHighlightEdtBinding =
-        LayoutHighlightEdtBinding.inflate(LayoutInflater.from(context), this, true)
-    private val editText: AppCompatEditText = binding.edt
+    private var mKeywords: MutableSet<String> = mutableSetOf()
+    private var mKeywordMap = mutableMapOf<String, Pair<Int, Int>>()
+    private var mBinding: LayoutHighlightEdtBinding = LayoutHighlightEdtBinding.inflate(LayoutInflater.from(context), this, true)
+    private val mEditText: RoundedBgEditText = mBinding.edt
+    private var mContent: String? = null
+    private var isHighlightFirstTime: Boolean = false
+    private var prevSelection = 0
 
     init {
+        mEditText.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {}
+
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                //todo: if user selected all or copy ?
+                val userChange = Math.abs(count - before) == 1
+                if(userChange && isModifyKeyword()){
+                    Log.d("tahn_check", "onTextChanged")
+                    validKeywords()
+                }
+            }
+        })
     }
 
-    //match keyword in string
-    fun submitKeywords(keywords: List<String>?){
-        if(keywords.isNullOrEmpty()) return
+    fun setContent(content: String?): HighlightEditText{
+        mContent = content
+        mEditText.setText(content)
+        return this
+    }
+
+    fun submitKeywords(keywords: List<String>?): HighlightEditText{
+        if(mContent.isNullOrEmpty()) return this
+        if(keywords.isNullOrEmpty()) return this
         keywords.toSet().let {
-            this.keywords.clear()
-            this.keywords.addAll(it)
+            mKeywords.clear()
+            mKeywords.addAll(it)
         }
+
+        mKeywords.forEach { keyword ->
+            val indexOfKeyword = mContent!!.indexOf(keyword, ignoreCase = true)
+            if(indexOfKeyword >= 0){
+                mKeywordMap[keyword] = Pair(indexOfKeyword, indexOfKeyword + keyword.length)
+            }
+        }
+
+        return this
     }
 
-    fun getKeywordListInContent(){
+    fun highlightKeywords(){
+        val spannableString = SpannableString(mContent)
+        mKeywordMap.forEach {
+            spannableString.setSpan(android.text.Annotation("", "rounded"), it.value.first, it.value.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        mEditText.setText(spannableString)
+
+        isHighlightFirstTime = true
+    }
+
+    fun unHighlightKeywords(){
 
     }
 
-    private fun spannable(){
-        val boldSpan = StyleSpan(Typeface.BOLD)
-        val start: Int = 2
-        val end: Int = 4
-        val flag = Spannable.SPAN_INCLUSIVE_INCLUSIVE
-        editText.text?.setSpan(boldSpan, start, end, flag)
+    fun isModifyKeyword(): Boolean{
+        val content = mEditText.text
+        if(content.isNullOrEmpty()) return false
+        var keywordSize = 0
+        mKeywordMap.forEach {
+            if(content.contains(it.key)){
+                keywordSize++
+            }
+        }
 
-        val bg = RoundedBackgroundSpan(Color.BLUE, Color.BLACK, 16 * resources.displayMetrics.scaledDensity)
-
-        editText.text?.setSpan(bg,2, 4, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return keywordSize != mKeywordMap.size
     }
 
-    private fun background(){
-    }
+    fun validKeywords(){
+        if(!isHighlightFirstTime) return
+        val content = mEditText.text.toString()
+        val spannableString = SpannableString(content)
 
+        this.mKeywordMap.clear()
+        this.mKeywords.forEach { keyword ->
+            val indexOfKeyword = content.indexOf(keyword, ignoreCase = true)
+            if(indexOfKeyword >= 0){
+                mKeywordMap[keyword] = Pair(indexOfKeyword, indexOfKeyword + keyword.length)
+            }
+        }
+
+        mKeywordMap.forEach {
+            spannableString.setSpan(android.text.Annotation("", "rounded"), it.value.first, it.value.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        prevSelection = mEditText.selectionStart
+        mEditText.setText(spannableString)
+        mEditText.setSelection(prevSelection)
+    }
 }

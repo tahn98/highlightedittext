@@ -8,7 +8,13 @@ import android.text.style.ReplacementSpan
 import kotlin.math.roundToInt
 
 
-class RoundedBackgroundSpan(private val mBackgroundColor: Int, private val mTextColor: Int, private val mTextSize: Float, private val mPaddingVertical: Float = PADDING_X, private val mPaddingHorizontal: Float = PADDING_Y) :
+class RoundedBackgroundSpan(
+    private val mBackgroundColor: Int,
+    private val mTextColor: Int,
+    private val mTextSize: Float,
+    private val mPaddingVertical: Float = PADDING_X,
+    private val mPaddingHorizontal: Float = PADDING_Y
+) :
     ReplacementSpan() {
     override fun draw(
         canvas: Canvas,
@@ -29,7 +35,7 @@ class RoundedBackgroundSpan(private val mBackgroundColor: Int, private val mText
         // draw the rounded background
         newPaint.color = mBackgroundColor
         val textHeightWrapping: Float = DimenUtils.convertDpToPx(4f)
-        val tagBottom = top + textHeightWrapping + 2*PADDING_Y + mTextSize + textHeightWrapping
+        val tagBottom = top + textHeightWrapping + 2 * PADDING_Y + mTextSize + textHeightWrapping
         val tagRight = x + getTagWidth(text, start, end, newPaint)
         val rect = RectF(x, top.toFloat(), tagRight, tagBottom)
         canvas.drawRoundRect(rect, CORNER_RADIUS, CORNER_RADIUS, newPaint)
@@ -47,7 +53,9 @@ class RoundedBackgroundSpan(private val mBackgroundColor: Int, private val mText
     }
 
     private fun getTagWidth(text: CharSequence, start: Int, end: Int, paint: Paint): Int {
-        return (2*PADDING_X + paint.measureText(text.subSequence(start, end).toString())).roundToInt()
+        return (2 * PADDING_X + paint.measureText(
+            text.subSequence(start, end).toString()
+        )).roundToInt()
     }
 
     override fun getSize(
