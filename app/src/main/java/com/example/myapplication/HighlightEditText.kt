@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 import android.content.Context
+import android.graphics.Color
 import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
@@ -12,6 +13,7 @@ import android.view.LayoutInflater
 import android.widget.FrameLayout
 import com.example.myapplication.databinding.LayoutHighlightEdtBinding
 import com.example.myapplication.span.RoundedBgEditText
+import kotlin.math.abs
 
 /**
  * EditText to support highlight key
@@ -37,8 +39,7 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                //todo: if user selected all or copy ?
-                val userChange = Math.abs(count - before) == 1
+                val userChange = abs(count - before) == 1
                 if(userChange && isModifyKeyword()){
                     Log.d("tahn_check", "onTextChanged")
                     validKeywords()
@@ -51,6 +52,19 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
         mContent = content
         mEditText.setText(content)
         return this
+    }
+
+    fun setContentAndHoldSelection(content: String?){
+        mContent = content
+        prevSelection = mEditText.selectionStart
+        mEditText.setText(content)
+        mEditText.setSelection(prevSelection)
+    }
+
+    private fun setContentAndHoldSelection(content: SpannableStringBuilder?){
+        prevSelection = mEditText.selectionStart
+        mEditText.text = content
+        mEditText.setSelection(prevSelection)
     }
 
     fun submitKeywords(keywords: List<String>?): HighlightEditText{
@@ -76,28 +90,41 @@ class HighlightEditText(context: Context, attrs: AttributeSet?, defStyle: Int) :
         mKeywordMap.forEach {
             spannableString.setSpan(android.text.Annotation("", "rounded"), it.value.first, it.value.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-
         mEditText.setText(spannableString)
-
         isHighlightFirstTime = true
+
+        updateSpannableMargin()
     }
 
-    fun updateSpannableMargin(){
+    /**
+     * cheat replace whitespace to ReplacementSpan to make margin between Spannable
+     */
+    private fun updateSpannableMargin(){
         val keys = mKeywordMap.keys.toList()
-        val spannableStringBuilder = SpannableString(mEditText.text)
+        val spannableStringBuilder = SpannableStringBuilder(mEditText.text)
         keys.forEach {
-            val spannableKeyWordPosition = mKeywordMap[it] ?: return@forEach
-//            spannableStringBuilder[spannableKeyWordPosition.first - 1].
+            val spannableKeyWordPositionStart = spannableStringBuilder.indexOf(it)
+            val spannableKeyWordPositionEnd = spannableKeyWordPositionStart + it.length
+
+            val spaceBackgroundSpan = RoundedBackgroundSpan(Color.BLUE, Color.TRANSPARENT, 0f, mPaddingHorizontal = DimenUtils.convertDpToPx(30f))
+            val spaceSpannable = SpannableString("\u2002")
+            spaceSpannable.setSpan(spaceBackgroundSpan,0, spaceSpannable.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+
+            //check white space then replace
+            if(spannableStringBuilder[spannableKeyWordPositionStart - 1].isWhitespace()) spannableStringBuilder.replace(spannableKeyWordPositionStart - 1, spannableKeyWordPositionStart, spaceSpannable)
+            if(spannableKeyWordPositionEnd + 1 <= spannableStringBuilder.length){
+                if(spannableStringBuilder[spannableKeyWordPositionEnd].isWhitespace()) spannableStringBuilder.replace(spannableKeyWordPositionEnd, spannableKeyWordPositionEnd + 1, spaceSpannable)
+            }
         }
+
+        setContentAndHoldSelection(spannableStringBuilder)
     }
 
-    fun unHighlightKeywords(){
-
-    }
 
     fun isModifyKeyword(): Boolean{
         val content = mEditText.text
         if(content.isNullOrEmpty()) return false
+        if(mKeywordMap.keys.size == 0) return false
         var keywordSize = 0
         mKeywordMap.forEach {
             if(content.contains(it.key)){
