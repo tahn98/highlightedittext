@@ -3,10 +3,12 @@ package com.example.myapplication
 import android.app.ActionBar.LayoutParams
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.Animation
 import android.view.animation.ScaleAnimation
 import android.view.animation.Transformation
+import android.view.animation.TranslateAnimation
 import androidx.appcompat.app.AppCompatActivity
 
 
@@ -56,16 +58,39 @@ class MainActivity : AppCompatActivity() {
 //        anim.duration = 1000
 //        dialog.startAnimation(anim)
 
-        val anim: Animation = ScaleAnimation(
-            0.2f, 1f,  // Start and end values for the X axis scaling
-            1f, 1f,  // Start and end values for the Y axis scaling
-            Animation.RELATIVE_TO_SELF, 0.5f,  // Pivot point of X scaling
-            Animation.RELATIVE_TO_SELF, 0f
-        ) // Pivot point of Y scaling
-        anim.interpolator = AccelerateDecelerateInterpolator()
-        anim.fillAfter = true // Needed to keep the result of the animation
-        anim.duration = 1000
-        dialog.startAnimation(anim)
+
+
+        val animate = TranslateAnimation(0f,0f,dialog.measuredHeight.toFloat(),0f)
+        animate.interpolator = AccelerateDecelerateInterpolator()
+        animate.duration = 1000
+        animate.fillAfter = true
+        animate.setAnimationListener(object : Animation.AnimationListener{
+            override fun onAnimationStart(animation: Animation?) {
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                val layoutParams = dialog.layoutParams
+                layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT
+
+                val anim: Animation = ScaleAnimation(
+                    0.2f, 1f,  // Start and end values for the X axis scaling
+                    1f, 1f,  // Start and end values for the Y axis scaling
+                    Animation.RELATIVE_TO_SELF, 0.5f,  // Pivot point of X scaling
+                    Animation.RELATIVE_TO_SELF, 0f
+                ) // Pivot point of Y scaling
+                anim.interpolator = AccelerateDecelerateInterpolator()
+                anim.fillAfter = true // Needed to keep the result of the animation
+                anim.duration = 1000
+                dialog.startAnimation(anim)
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {
+            }
+
+        })
+        dialog.startAnimation(animate)
+
+        return
     }
     fun scaleView(v: View, startScale: Float, endScale: Float) {
         val anim: Animation = ScaleAnimation(
